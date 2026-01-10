@@ -5,7 +5,7 @@
 import { Database, default as sqlite3InitModule } from '@sqlite.org/sqlite-wasm';
 
 interface ISqliteData {
-  type: 'init' | 'executeSql' | 'batchSql' | 'batchReturnSql';
+  type: 'init' | 'executeSql' | 'batchSql' | 'batchReturnSql' | 'export';
   id: string;
   flags: string;
   filename: string;
@@ -174,6 +174,45 @@ self.onmessage = async (messageEvent: MessageEvent) => {
       sqliteMessage.error = e;
     } finally {
       self.postMessage(sqliteMessage);
+    }
+  }
+
+  /********************* EXPORT *********************/
+  if (sqliteMessage.type === 'export') {
+    debugger
+    try {
+      if (!dbs[sqliteMessage.filename]) {
+        throw new Error('Database not initialized');
+      }
+
+      // 1. Force all data from WAL into the main DB file
+      dbs[sqliteMessage.filename].exec('PRAGMA wal_checkpoint(FULL)');
+
+      // 2. Access the file directly from OPFS
+      // @ts-ignore - Typescript might not know about getDirectory yet
+      const root = await navigator.storage.getDirectory();
+      
+      // Remove leading '/' from '/dbname.sqlite3' to match OPFS file name
+      const cleanFilename = sqliteMessage.filename.startsWith('/') 
+        ? sqliteMessage.filename.slice(1) 
+        : sqliteMessage.filename;
+
+      const fileHandle = await root.getFileHandle(cleanFilename);
+      const fileBlob = await fileHandle.getFile();
+      const arrayBuffer = await fileBlob.arrayBuffer();
+
+      // 3. Send the binary data back
+      sqliteMessage.rows = arrayBuffer; // We re-use the 'rows' property to carry the buffer
+
+    } catch (e) {
+      sqliteMessage.error = e;
+    } finally {
+      // Transfer the arrayBuffer to avoid copying overhead
+      if (sqliteMessage.rows) {
+        self.postMessage(sqliteMessage, JSON.stringify([sqliteMessage.rows])); 
+      } else {
+        self.postMessage(sqliteMessage);
+      }
     }
   }
 

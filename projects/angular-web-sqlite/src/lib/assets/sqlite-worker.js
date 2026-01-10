@@ -14328,4 +14328,31 @@ self.onmessage = (messageEvent) => __awaiter(void 0, void 0, void 0, function* (
             self.postMessage(sqliteMessage);
         }
     }
+    if (sqliteMessage.type === 'export') {
+        try {
+            if (!dbs[sqliteMessage.filename]) {
+                throw new Error('Database not initialized');
+            }
+            dbs[sqliteMessage.filename].exec('PRAGMA wal_checkpoint(FULL)');
+            const root = yield navigator.storage.getDirectory();
+            const cleanFilename = sqliteMessage.filename.startsWith('/')
+                ? sqliteMessage.filename.slice(1)
+                : sqliteMessage.filename;
+            const fileHandle = yield root.getFileHandle(cleanFilename);
+            const fileBlob = yield fileHandle.getFile();
+            const arrayBuffer = yield fileBlob.arrayBuffer();
+            sqliteMessage.rows = arrayBuffer;
+        }
+        catch (e) {
+            sqliteMessage.error = e;
+        }
+        finally {
+            if (sqliteMessage.rows) {
+                self.postMessage(sqliteMessage, JSON.stringify([sqliteMessage.rows]));
+            }
+            else {
+                self.postMessage(sqliteMessage);
+            }
+        }
+    }
 });

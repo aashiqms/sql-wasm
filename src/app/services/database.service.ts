@@ -76,6 +76,7 @@ export class WebSqlite {
    * Function that downloads sqlite file
    */
   public async exportDb() {
+    debugger
     await this.waitForInitialization();
     
     const exportMsg: Message = { 
