@@ -1,0 +1,51 @@
+{
+  "name": "wasm-sqllite",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "build:lib": "npx ng-packagr -p projects/angular-web-sqlite/ng-package.json",
+    "worker-pack": "cd worker && npm i --force && npm run build && npm run bundle && cd src && node moveFolder.js && cd .. && cd .."
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "dependencies": {
+    "@angular/common": "^21.0.0",
+    "@angular/compiler": "^21.0.0",
+    "@angular/core": "^21.0.0",
+    "@angular/forms": "^21.0.0",
+    "@angular/platform-browser": "^21.0.0",
+    "@angular/router": "^21.0.0",
+    "@ngrx/signals": "^21.0.1",
+    "@ngrx/store": "^21.0.1",
+    "@sqlite.org/sqlite-wasm": "^3.44.0-build2",
+    "angular-web-sqlite": "^1.0.34",
+    "comlink": "^4.4.2",
+    "rxjs": "~7.8.0",
+    "shelljs": "^0.10.0",
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.0.3",
+    "@angular/cli": "^21.0.3",
+    "@angular/compiler-cli": "^21.0.0",
+    "jsdom": "^27.1.0",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8"
+  }
+}

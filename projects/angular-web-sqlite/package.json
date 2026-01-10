@@ -1,0 +1,28 @@
+{
+  "name": "angular-web-sqlite",
+  "author": "Diego Santiago Lijó",
+  "version": "1.0.34",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "cd src && cd lib && cd assets && node copy-assets.js && cd .. && cd .. && cd .. && ng build --configuration=production"
+  },
+  "peerDependencies": {
+    "@angular/common": "13.x || 14.x || 15.x || 16.x || 17.x || 18.x || 19.x || 20.x || 21.x || 22.x",
+    "@angular/core": "13.x || 14.x || 15.x || 16.x || 17.x || 18.x || 19.x || 20.x || 21.x || 22.x",
+    "@ionic/angular": "5.x || 6.x || 7.x || 8.x"
+  },
+  "dependencies": {
+    "@sqlite.org/sqlite-wasm": "3.44.0-build2",
+    "comlink": "^4.4.2",
+    "tslib": "^2.6.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/diegolijo/angular-web-sqlite.git"
+  },
+  "keywords": [
+    "angular",
+    "sqlite",
+    "web"
+  ]
+}
