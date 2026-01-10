@@ -209,7 +209,8 @@ self.onmessage = async (messageEvent: MessageEvent) => {
     } finally {
       // Transfer the arrayBuffer to avoid copying overhead
       if (sqliteMessage.rows) {
-        self.postMessage(sqliteMessage, JSON.stringify([sqliteMessage.rows])); 
+        // @ts-ignore
+        self.postMessage(sqliteMessage); 
       } else {
         self.postMessage(sqliteMessage);
       }

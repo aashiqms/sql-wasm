@@ -133,6 +133,7 @@ self.onmessage = (messageEvent) => __awaiter(void 0, void 0, void 0, function* (
         }
     }
     if (sqliteMessage.type === 'export') {
+        debugger;
         try {
             if (!dbs[sqliteMessage.filename]) {
                 throw new Error('Database not initialized');
@@ -152,7 +153,7 @@ self.onmessage = (messageEvent) => __awaiter(void 0, void 0, void 0, function* (
         }
         finally {
             if (sqliteMessage.rows) {
-                self.postMessage(sqliteMessage, JSON.stringify([sqliteMessage.rows]));
+                self.postMessage(sqliteMessage);
             }
             else {
                 self.postMessage(sqliteMessage);
