@@ -27,6 +27,28 @@ const dbKeys: { [property: string]: CryptoKey } = {};
 const log = (...args) => console.log(...args);
 const error = (...args) => console.error(...args);
 
+// --- LOG HELPERS START --- //
+// NEW: Helper to log operations to the database
+function logOperation(db: Database, type: string, sql: string, params: any) {
+  // CRITICAL: Prevent infinite loops. 
+  // Do not log insertions into the log table itself or the security table.
+  if (sql.includes('_audit_log') || sql.includes('_security')) return;
+
+  try {
+    // We truncate params string to avoid bloating DB with huge image strings
+    let paramStr = JSON.stringify(params);
+    if (paramStr.length > 500) paramStr = paramStr.substring(0, 500) + '... [TRUNCATED]';
+
+    db.exec({
+      sql: `INSERT INTO _audit_log (timestamp, type, sql, params) VALUES (datetime('now'), ?, ?, ?)`,
+      bind: [type, sql, paramStr]
+    });
+  } catch (e) {
+    console.error('Failed to write audit log:', e);
+  }
+}
+// --- LOG HELPERS END --- //
+
 // --- CRYPTO HELPERS START --- //
 
 // Helper: Verify Password for specific actions
@@ -173,6 +195,17 @@ self.onmessage = async (messageEvent: MessageEvent) => {
         const db = new sqlite3.oo1.OpfsDb(sqliteMessage.filename, sqliteMessage.flags);
         dbs[sqliteMessage.filename] = db;
 
+        // 1. CREATE AUDIT TABLE
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS _audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            timestamp TEXT, 
+            type TEXT, 
+            sql TEXT, 
+            params TEXT
+          )
+        `);
+
         // --- PASSWORD PROTECTION LOGIC ---
         if (sqliteMessage.password) {
           
@@ -286,12 +319,16 @@ self.onmessage = async (messageEvent: MessageEvent) => {
       checkAccess(sqliteMessage.filename);
       
       // ... existing execution logic ...
+      const db = dbs[sqliteMessage.filename];
+      logOperation(db, 'EXECUTE', sqliteMessage.sql, sqliteMessage.param);
+
       const values: any = [];
       if (!sqliteMessage.param) sqliteMessage.param = [];
       stringifyParamObjects(sqliteMessage.param);
 
       // --- OPTIONAL: AUTO ENCRYPT params marked with prefix? ---
       // For now, standard execution
+
       
       dbs[sqliteMessage.filename].exec({
         sql: sqliteMessage.sql,
@@ -301,6 +338,7 @@ self.onmessage = async (messageEvent: MessageEvent) => {
           values.push(row);
         }
       });
+      // 1. LOG THE QUERY
       sqliteMessage.rows = values;
     } catch (e) {
       sqliteMessage.error = e;
@@ -323,6 +361,9 @@ self.onmessage = async (messageEvent: MessageEvent) => {
       sqliteMessage.sqls.forEach(([sql, param]) => {
         if (!param) param = [];
         stringifyParamObjects(param);
+        const db = dbs[sqliteMessage.filename];
+        // 1. LOG EACH ITEM IN BATCH
+        logOperation(db, 'BATCH_ITEM', sql, param);
         dbs[sqliteMessage.filename].exec({ sql: sql, bind: param });
         changes += dbs[sqliteMessage.filename].changes();
       });
@@ -345,7 +386,8 @@ self.onmessage = async (messageEvent: MessageEvent) => {
       if (!dbs[sqliteMessage.filename]) {
         throw new Error('Initialize the database before performing queries');
       }
-      
+      const db = dbs[sqliteMessage.filename];
+
       dbs[sqliteMessage.filename].exec('BEGIN TRANSACTION');
       
       const batchResults: any[] = [];
@@ -357,6 +399,9 @@ self.onmessage = async (messageEvent: MessageEvent) => {
         stringifyParamObjects(param);
 
         const currentQueryRows: any[] = [];
+
+        // 1. LOG EACH ITEM IN BATCH
+        logOperation(db, 'BATCH_ITEM', sql, param);
         
         dbs[sqliteMessage.filename].exec({
           sql: sql,

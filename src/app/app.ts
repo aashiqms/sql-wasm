@@ -31,6 +31,13 @@ export class App {
   // If DB exists: It verifies this password.
       await this.webSqlite.init('my-store-db', 'ct', secretKey);
       this.log('Database initialized successfully.');
+      const resultStart = await this.webSqlite.executeSql('CREATE TABLE IF NOT EXISTS your_table (a TEXT, b TEXT)', []);
+      console.log('resultStart',resultStart)
+        const result1 = await this.webSqlite.executeSql('INSERT INTO your_table (a, b) VALUES (11, 22)', []);
+        console.log('result1', result1)
+        const result2 = await this.webSqlite.executeSql('INSERT INTO your_table (a, b) VALUES (33, 44)', []);
+        console.log('result2', result2)
+
     } catch (err) {
       this.logError(err);
     }

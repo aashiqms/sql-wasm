@@ -403,7 +403,13 @@ export class WebSqlite {
 
     try {
       // 1. Get all table names (excluding internal sqlite_ tables)
-      const fetchTablesSql = `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`;
+      // const fetchTablesSql = `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`;
+      const fetchTablesSql = `
+        SELECT name FROM sqlite_master 
+        WHERE type='table' 
+        AND name NOT LIKE 'sqlite_%' 
+        AND name NOT IN ('_audit_log', '_security')
+      `;
       const result = await this.executeSql(fetchTablesSql, []);
 
       if (result && result.rows && result.rows.length > 0) {

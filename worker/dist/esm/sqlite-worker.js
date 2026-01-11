@@ -12,6 +12,22 @@ const dbs = {};
 const dbKeys = {};
 const log = (...args) => console.log(...args);
 const error = (...args) => console.error(...args);
+function logOperation(db, type, sql, params) {
+    if (sql.includes('_audit_log') || sql.includes('_security'))
+        return;
+    try {
+        let paramStr = JSON.stringify(params);
+        if (paramStr.length > 500)
+            paramStr = paramStr.substring(0, 500) + '... [TRUNCATED]';
+        db.exec({
+            sql: `INSERT INTO _audit_log (timestamp, type, sql, params) VALUES (datetime('now'), ?, ?, ?)`,
+            bind: [type, sql, paramStr]
+        });
+    }
+    catch (e) {
+        console.error('Failed to write audit log:', e);
+    }
+}
 function verifyPasswordAction(filename, password) {
     return __awaiter(this, void 0, void 0, function* () {
         const db = dbs[filename];
@@ -108,6 +124,15 @@ self.onmessage = (messageEvent) => __awaiter(void 0, void 0, void 0, function* (
             try {
                 const db = new sqlite3.oo1.OpfsDb(sqliteMessage.filename, sqliteMessage.flags);
                 dbs[sqliteMessage.filename] = db;
+                db.exec(`
+          CREATE TABLE IF NOT EXISTS _audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            timestamp TEXT, 
+            type TEXT, 
+            sql TEXT, 
+            params TEXT
+          )
+        `);
                 if (sqliteMessage.password) {
                     db.exec('CREATE TABLE IF NOT EXISTS _security (id INTEGER PRIMARY KEY, salt TEXT, verifier TEXT)');
                     const existingSecurity = db.exec({
@@ -180,6 +205,8 @@ self.onmessage = (messageEvent) => __awaiter(void 0, void 0, void 0, function* (
     if (sqliteMessage.type === 'executeSql') {
         try {
             checkAccess(sqliteMessage.filename);
+            const db = dbs[sqliteMessage.filename];
+            logOperation(db, 'EXECUTE', sqliteMessage.sql, sqliteMessage.param);
             const values = [];
             if (!sqliteMessage.param)
                 sqliteMessage.param = [];
@@ -210,6 +237,8 @@ self.onmessage = (messageEvent) => __awaiter(void 0, void 0, void 0, function* (
                 if (!param)
                     param = [];
                 stringifyParamObjects(param);
+                const db = dbs[sqliteMessage.filename];
+                logOperation(db, 'BATCH_ITEM', sql, param);
                 dbs[sqliteMessage.filename].exec({ sql: sql, bind: param });
                 changes += dbs[sqliteMessage.filename].changes();
             });
@@ -230,6 +259,7 @@ self.onmessage = (messageEvent) => __awaiter(void 0, void 0, void 0, function* (
             if (!dbs[sqliteMessage.filename]) {
                 throw new Error('Initialize the database before performing queries');
             }
+            const db = dbs[sqliteMessage.filename];
             dbs[sqliteMessage.filename].exec('BEGIN TRANSACTION');
             const batchResults = [];
             sqliteMessage.sqls.forEach(([sql, param]) => {
@@ -238,6 +268,7 @@ self.onmessage = (messageEvent) => __awaiter(void 0, void 0, void 0, function* (
                 }
                 stringifyParamObjects(param);
                 const currentQueryRows = [];
+                logOperation(db, 'BATCH_ITEM', sql, param);
                 dbs[sqliteMessage.filename].exec({
                     sql: sql,
                     bind: param,
