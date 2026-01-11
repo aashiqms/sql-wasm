@@ -1,6 +1,6 @@
 import '@angular/compiler';
 import { NgModule } from '@angular/core';
-import { AngularWebSqliteComponent } from './angular-web-sqlite.component';
+import { AngularWebSqliteComponent } from './sqlite-assembly.component';
 
 
 

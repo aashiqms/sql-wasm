@@ -32,7 +32,7 @@
               },
               {
                 "glob": "**/*.js",
-                "input": "node_modules/angular-web-sqlite/src/lib/assets",
+                "input": "node_modules/sqlite-assembly/src/lib/assets",
                 "output": "sqlite-client"
               },
               {
@@ -42,7 +42,7 @@
               },
               {
                 "glob": "**/*.js",
-                "input": "./node_modules/angular-web-sqlite/src/lib/assets",
+                "input": "./node_modules/sqlite-assembly/src/lib/assets",
                 "output": "./sqlite-client/"
               },
               {
@@ -106,23 +106,23 @@
         }
       }
     },
-    "angular-web-sqlite": {
+    "sqlite-assembly": {
       "projectType": "library",
-      "root": "projects/angular-web-sqlite",
-      "sourceRoot": "projects/angular-web-sqlite/src",
+      "root": "projects/sqlite-assembly",
+      "sourceRoot": "projects/sqlite-assembly/src",
       "prefix": "lib",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
-            "project": "projects/angular-web-sqlite/ng-package.json"
+            "project": "projects/sqlite-assembly/ng-package.json"
           },
           "configurations": {
             "production": {
-              "tsConfig": "projects/angular-web-sqlite/tsconfig.lib.prod.json"
+              "tsConfig": "projects/sqlite-assembly/tsconfig.lib.prod.json"
             },
             "development": {
-              "tsConfig": "projects/angular-web-sqlite/tsconfig.lib.json"
+              "tsConfig": "projects/sqlite-assembly/tsconfig.lib.json"
             }
           },
           "defaultConfiguration": "production"
@@ -130,9 +130,9 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "main": "projects/angular-web-sqlite/src/test.ts",
-            "tsConfig": "projects/angular-web-sqlite/tsconfig.spec.json",
-            "karmaConfig": "projects/angular-web-sqlite/karma.conf.js"
+            "main": "projects/sqlite-assembly/src/test.ts",
+            "tsConfig": "projects/sqlite-assembly/tsconfig.spec.json",
+            "karmaConfig": "projects/sqlite-assembly/karma.conf.js"
           }
         }
       }

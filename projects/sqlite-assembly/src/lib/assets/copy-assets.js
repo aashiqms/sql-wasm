@@ -9,7 +9,7 @@ var proxyFilePath = './proxy.conf.js';
 var newAssets = [
   {
     "glob": "**/*.js",
-    "input": "./node_modules/angular-web-sqlite/src/lib/assets",
+    "input": "./node_modules/sqlite-assembly/src/lib/assets",
     "output": "./sqlite-client/"
   },
   {

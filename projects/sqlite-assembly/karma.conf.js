@@ -25,7 +25,7 @@ module.exports = function (config) {
       suppressAll: true // removes the duplicated traces
     },
     coverageReporter: {
-      dir: require('path').join(__dirname, '../../coverage/angular-web-sqlite'),
+      dir: require('path').join(__dirname, '../../coverage/sqlite-assembly'),
       subdir: '.',
       reporters: [
         { type: 'html' },

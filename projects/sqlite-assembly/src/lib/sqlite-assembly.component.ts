@@ -2,7 +2,7 @@ import '@angular/compiler';
 import { Component, OnInit } from '@angular/core';
 
 @Component({
-  selector: 'app-angular-web-sqlite',
+  selector: 'app-sqlite-assembly',
   template: ``,
   standalone: false,
   styles: [

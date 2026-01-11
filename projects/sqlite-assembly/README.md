@@ -1,6 +1,6 @@
-# angular-web-sqlite
+# sqlite-assembly
 
-angular-web-sqlite is an Angular service that wraps the @sqlite.org/sqlite-wasm module. 
+sqlite-assembly is an Angular service that wraps the @sqlite.org/sqlite-wasm module. 
 This Angular service takes care of the declaration and communication with a web worker, essential for utilizing the Origin Private File System (OPFS) storage back-end.
 
 ## Installation
@@ -8,7 +8,7 @@ This Angular service takes care of the declaration and communication with a web 
 Install the library using npm:
 
 ```bash
-npm install angular-web-sqlite
+npm install sqlite-assembly
 ``` 
 
 ## Angular Configuration
@@ -31,7 +31,7 @@ Ensure that the 'sqlite-client' folder is copied to the project's output directo
               ...
               {
                 "glob": "**/*.js",
-                "input": "./node_modules/angular-web-sqlite/src/lib/assets",
+                "input": "./node_modules/sqlite-assembly/src/lib/assets",
                 "output": "./sqlite-client/"
               },
               {
@@ -71,7 +71,7 @@ batchSql(sqls: [index: number]: [string, any[]]): Promise<any>  //Executes a bat
 ## Usage
 
 ```typescript
-import { WebSqlite } from 'angular-web-sqlite';
+import { WebSqlite } from 'sqlite-assembly';
 
 @Injectable()
 export class YourService {

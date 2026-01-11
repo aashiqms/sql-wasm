@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { WebSqlite } from 'angular-web-sqlite';
+import { WebSqlite } from 'sqlite-assembly';
 
 @Component({
   selector: 'app-root',
@@ -16,8 +16,8 @@ export class App {
   ) {  
     setTimeout(() => {
       this.webSqlite.init('test')
-      this.batchSqlOperations()
-      // this.executeQuery(`INSERT INTO your_table (a, b) VALUES (1, 'value 1')`)
+      // this.batchSqlOperations()
+      this.executeQuery(`INSERT INTO your_table (a, b) VALUES (1, 'value 1')`)
             this.executeQuery('SELECT * FROM your_table')
             // this.insertTenRecords()
 
@@ -42,7 +42,7 @@ export class App {
         ["CREATE TABLE IF NOT EXISTS your_table2 (c TEXT, d TEXT)", []],
         ];
     const result = await this.webSqlite.batchSql(sqls);
-    console.log('result', result)
+    console.log('result batch sql', result)
     // Process the result as needed
   }
 
