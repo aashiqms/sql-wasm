@@ -273,7 +273,7 @@ export class WebSqlite {
       // Aggregate results for the Dictionary case
       const totalInserted = results.reduce((acc, curr) => acc + curr.inserted, 0);
       const allChildren = results.reduce((acc, r) => acc.concat(r.children || []), [] as ImportResult[]);     
-       
+
       return {
         table: tableName,
         inserted: totalInserted,
@@ -369,6 +369,63 @@ export class WebSqlite {
     return false;
   }
   // Complex Object End
+
+  // Database Management Start
+  /**
+   * Deletes all records from a specific table.
+   * usage: await this.webSqlite.clearTable('products');
+   */
+  public async clearTable(tableName: string) {
+    await this.waitForInitialization();
+    // We use DELETE FROM to remove data. 
+    // We wrap tableName in quotes to handle special characters.
+    const sql = `DELETE FROM "${tableName}"`;
+    return this.executeSql(sql, []);
+  }
+
+  /**
+   * COMPLETELY wipes the database.
+   * Drops all tables so they can be re-created fresh.
+   */
+  public async clearDatabase() {
+    await this.waitForInitialization();
+
+    try {
+      // 1. Get all table names (excluding internal sqlite_ tables)
+      const fetchTablesSql = `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`;
+      const result = await this.executeSql(fetchTablesSql, []);
+
+      if (result && result.rows && result.rows.length > 0) {
+        const tables = result.rows.map((r: any) => r.name);
+        
+        console.log(`Dropping ${tables.length} tables:`, tables);
+
+        // 2. Disable foreign key constraints temporarily to avoid errors 
+        // (e.g. dropping a parent table before a child table)
+        await this.executeSql('PRAGMA foreign_keys = OFF', []);
+
+        // 3. Prepare Drop Statements
+        const dropQueries = tables.map((name: string) => [`DROP TABLE IF EXISTS "${name}"`, []]);
+        
+        // 4. Execute Batch Drop
+        await this.batchSql(dropQueries);
+
+        // 5. Re-enable foreign keys
+        await this.executeSql('PRAGMA foreign_keys = ON', []);
+        
+        // 6. Optional: VACUUM to reclaim disk space from the file
+        await this.executeSql('VACUUM', []);
+
+        return { success: true, tablesDropped: tables.length };
+      }
+      
+      return { success: true, tablesDropped: 0 };
+    } catch (e) {
+      console.error('Error clearing database:', e);
+      throw e;
+    }
+  }
+  // Database Management End
 
 
   private messageReceived(message: MessageEvent) {
