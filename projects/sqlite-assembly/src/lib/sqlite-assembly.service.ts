@@ -5,10 +5,11 @@ import '@angular/compiler';
 import { Injectable } from '@angular/core';
 
 export interface Message {
-  type: 'init' | 'executeSql' | 'batchSql' | 'batchReturnSql' | 'export';
+  type: 'init' | 'executeSql' | 'batchSql' | 'batchReturnSql' | 'export'| 'reset'; // Added 'reset'
   id: string;
   flags?: string;
   filename?: string;
+  password?: string;
   error?: any;
   sql?: string;
   param?: any;
@@ -35,11 +36,20 @@ export class WebSqlite {
   constructor(
   ) { }
 
-  init(dbName: string, flags?: string) {
+ init(dbName: string, flags?: string, password?: string) {
     this.worker = new Worker(this.sqliteClientWorkerPath, { type: 'module' });
     this.worker.onmessage = this.messageReceived.bind(this);
     this.filename = `/${dbName}.sqlite3`;
-    const initDb: Message = { type: 'init', filename: this.filename, flags: flags || 'ct', id: this.generateGuid() };
+    
+    // Pass the password in the init message
+    const initDb: Message = { 
+        type: 'init', 
+        filename: this.filename, 
+        flags: flags || 'ct', 
+        password: password, 
+        id: this.generateGuid() 
+    };
+
     this.worker.postMessage(initDb);
     return new Promise<any>((resolve, reject) => {
       this.queuedPromises[initDb.id] = {
@@ -81,12 +91,13 @@ export class WebSqlite {
     /**
    * Function that downloads sqlite file
    */
-  public async exportDb() {
+  public async exportDb(password?: string) {
     await this.waitForInitialization();
     
     const exportMsg: Message = { 
         type: 'export', 
         filename: this.filename, 
+        password: password,
         id: this.generateGuid() 
     };
     

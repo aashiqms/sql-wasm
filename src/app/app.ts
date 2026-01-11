@@ -1,7 +1,7 @@
 import { Component, inject, signal, WritableSignal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { WebSqlite } from 'sqlite-assembly';
-import { mockData } from './utils/db-util';
+import { mockData, secretKey } from './utils/db-util';
 import { FormsModule } from '@angular/forms';
 
 
@@ -27,7 +27,9 @@ export class App {
 
   async ngOnInit() {
     try {
-      await this.webSqlite.init('my-store-db');
+      // If DB is new: It sets this password.
+  // If DB exists: It verifies this password.
+      await this.webSqlite.init('my-store-db', 'ct', secretKey);
       this.log('Database initialized successfully.');
     } catch (err) {
       this.logError(err);
@@ -116,8 +118,59 @@ export class App {
   }
 
   exportDatabase() {
-  this.webSqlite.exportDb().then(() => {
+    const password = prompt("Please enter database password to export:");
+    if (!password) return; // User cancelled
+  this.webSqlite.exportDb(password).then(() => {
     console.log('Download started');
   });
+}
+
+// App methods
+
+ 
+
+  async batchSqlOperations() {
+    const sqls = [
+        ["CREATE TABLE IF NOT EXISTS your_table (a TEXT, b TEXT)", []],
+        ["CREATE TABLE IF NOT EXISTS your_table2 (c TEXT, d TEXT)", []],
+        ];
+    const result = await this.webSqlite.batchSql(sqls);
+    console.log('result batch sql', result)
+    // Process the result as needed
+  }
+
+  async insertTenRecords() {
+  const batchRequests = [];
+
+  // 1. Generate the INSERT statements
+  for (let i = 1; i <= 10; i++) {
+    batchRequests.push([
+      'INSERT INTO your_table (a, b) VALUES (?, ?)', 
+      [`value_a_${i}`, i] // Params: a (string), b (number)
+    ]);
+  }
+
+  // 2. (Optional) Add a SELECT to return the data you just inserted
+  // Without this, the 'rows' for the INSERT commands will be empty arrays.
+  batchRequests.push([
+    'SELECT * FROM your_table DESC LIMIT 10', 
+    []
+  ]);
+
+  try {
+    // 3. Execute the batch
+    const response = await this.webSqlite.batchReturnSql(batchRequests);
+
+    // response.rows is an array of arrays.
+    // Indices 0-9 are the INSERT results (empty arrays).
+    // Index 10 is the SELECT result.
+    const insertedData = response; 
+    
+    console.log('Successfully inserted and retrieved:', insertedData);
+    this.log(insertedData)
+
+  } catch (error) {
+    console.error('Transaction failed, no records were inserted:', error);
+  }
 }
 }
