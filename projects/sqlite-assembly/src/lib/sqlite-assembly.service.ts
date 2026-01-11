@@ -139,6 +139,100 @@ export class WebSqlite {
     });
   }
 
+  // ---------------------------------------------------------
+  //  NEW: JSON HELPER METHODS
+  // ---------------------------------------------------------
+
+  /**
+   * Inserts JSON data. Automatically creates the table if it doesn't exist.
+   * @param tableName Name of the table
+   * @param data Single Object or Array of Objects
+   */
+  public async insertFromJson(tableName: string, data: Record<string, any> | Record<string, any>[]) {
+    await this.waitForInitialization();
+
+    // 1. Validate data
+    const isArray = Array.isArray(data);
+    if (isArray && (data as any[]).length === 0) return Promise.resolve();
+    if (!data) return Promise.resolve();
+
+    // 2. Extract schema from the first item and ensure table exists
+    const schemaSource = isArray ? (data as any[])[0] : data;
+    await this.ensureTableExists(tableName, schemaSource);
+
+    // 3. Process Insert
+    if (isArray) {
+      const batchData = (data as any[]).map(row => {
+        const { sql, values } = this.generateInsertStatement(tableName, row);
+        return [sql, values];
+      });
+      return this.batchSql(batchData);
+    } else {
+      const { sql, values } = this.generateInsertStatement(tableName, data as any);
+      return this.executeSql(sql, values);
+    }
+  }
+
+  /**
+   * Updates a row based on a unique identifier column.
+   * @param tableName Name of the table
+   * @param data The data object containing changes AND the identifier
+   * @param idColumn The name of the column to use as the WHERE clause (default: 'id')
+   */
+  public async updateFromJson(tableName: string, data: Record<string, any>, idColumn: string = 'id') {
+    await this.waitForInitialization();
+
+    if (!data.hasOwnProperty(idColumn)) {
+      throw new Error(`Data is missing the identifier column: ${idColumn}`);
+    }
+
+    const idValue = data[idColumn];
+    const updateKeys = Object.keys(data).filter(k => k !== idColumn);
+
+    if (updateKeys.length === 0) return Promise.resolve();
+
+    // Generate: UPDATE "table" SET "col1" = ?, "col2" = ? WHERE "id" = ?
+    const setClause = updateKeys.map(k => `"${k}" = ?`).join(', ');
+    const sql = `UPDATE "${tableName}" SET ${setClause} WHERE "${idColumn}" = ?`;
+    
+    // Values: [...updateValues, idValue]
+    const values = updateKeys.map(k => data[k]);
+    values.push(idValue);
+
+    return this.executeSql(sql, values);
+  }
+
+  /**
+   * Checks the JSON keys and types to generate a CREATE TABLE IF NOT EXISTS statement
+   */
+  private async ensureTableExists(tableName: string, row: Record<string, any>) {
+    const columns = Object.keys(row).map(key => {
+      const val = row[key];
+      let type = 'TEXT'; // Default
+      if (typeof val === 'number') type = 'REAL';
+      else if (typeof val === 'boolean') type = 'INTEGER';
+      
+      return `"${key}" ${type}`;
+    }).join(', ');
+
+    const sql = `CREATE TABLE IF NOT EXISTS "${tableName}" (${columns})`;
+    // We execute this directly. If table exists, sqlite ignores it.
+    await this.executeSql(sql, []);
+  }
+
+  private generateInsertStatement(tableName: string, row: Record<string, any>) {
+    const keys = Object.keys(row);
+    const values = Object.values(row);
+    const columns = keys.map(k => `"${k}"`).join(', ');
+    const placeholders = keys.map(() => '?').join(', ');
+    const sql = `INSERT INTO "${tableName}" (${columns}) VALUES (${placeholders})`;
+    return { sql, values };
+  }
+
+  // ---------------------------------------------------------
+  //  END NEW METHODS
+  // ---------------------------------------------------------
+
 
   private messageReceived(message: MessageEvent) {
     const sqliteMessage: Message = message.data;

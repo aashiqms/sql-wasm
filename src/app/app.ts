@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { WebSqlite } from 'sqlite-assembly';
+import { mockData } from './utils/util';
 
 @Component({
   selector: 'app-root',
@@ -11,6 +12,7 @@ import { WebSqlite } from 'sqlite-assembly';
 })
 export class App {
   protected readonly title = signal('wasm-sqllite');
+  _mockData = mockData;
   constructor(
     private webSqlite: WebSqlite
   ) {  
@@ -20,8 +22,18 @@ export class App {
       this.executeQuery(`INSERT INTO your_table (a, b) VALUES (1, 'value 1')`)
             this.executeQuery('SELECT * FROM your_table')
             // this.insertTenRecords()
+            this.executeFromJSON()
 
     }, 600);
+  }
+
+  async executeFromJSON() {
+    const logs = [
+    { timestamp: 12345, message: 'Error A' },
+    { timestamp: 12346, message: 'Error B' }
+];
+let result = await this.webSqlite.insertFromJson('system_logs', logs);
+console.log('result json', result)
   }
 
   async initializeDatabase(dbName: string) {
