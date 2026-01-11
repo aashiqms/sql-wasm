@@ -78,3 +78,5 @@ export const mockData = {
   }
 ]
 }
+
+export const secretKey ='6696'
