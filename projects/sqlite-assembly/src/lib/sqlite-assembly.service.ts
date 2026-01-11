@@ -16,6 +16,12 @@ export interface Message {
   rows?: any;
   rowsAffected?: number;
 }
+// Interface for the return value
+  interface ImportResult {
+    table: string;
+    inserted: number;
+    children?: ImportResult[];
+  }
 
 @Injectable()
 export class WebSqlite {
@@ -232,6 +238,137 @@ export class WebSqlite {
   // ---------------------------------------------------------
   //  END NEW METHODS
   // ---------------------------------------------------------
+
+  // Complex Object Start
+  /**
+   * Generic importer for complex nested JSON.
+   * - Flattens nested objects (e.g. { price: { val: 1 } } -> price_val)
+   * - Moves arrays to child tables (e.g. { images: [...] } -> Table 'parent_images')
+   * - Preserves relationships via Foreign Keys
+   * * @param tableName The name of the main table to start with (e.g. 'factory_products')
+   * @param data The data object/array
+   * @param parentKeyColumn (Optional) Name of the FK column for child tables (default: 'parent_id')
+   * @param parentKeyValue (Optional) The value of the FK
+   */
+  public async importComplexData(
+    tableName: string, 
+    data: any, 
+    parentKeyColumn: string | null = null, 
+    parentKeyValue: string | null = null
+  ): Promise<ImportResult | ImportResult[]> { // Change return type
+    
+    await this.waitForInitialization();
+
+    // Case 1: Data is the root Dictionary (e.g. Factory GUIDs)
+    if (!Array.isArray(data) && typeof data === 'object' && this.isDictionary(data)) {
+      const results: ImportResult[] = [];
+      for (const [key, value] of Object.entries(data)) {
+        // Recursive call
+        const res = await this.importComplexData(tableName, value, 'group_id', key);
+        // Determine if res is array or single object to push correctly
+        if (Array.isArray(res)) results.push(...res);
+        else results.push(res);
+      }
+      
+      // Aggregate results for the Dictionary case
+      const totalInserted = results.reduce((acc, curr) => acc + curr.inserted, 0);
+      const allChildren = results.reduce((acc, r) => acc.concat(r.children || []), [] as ImportResult[]);     
+       
+      return {
+        table: tableName,
+        inserted: totalInserted,
+        children: allChildren // This might duplicate child stats if they are identical structures, but serves for logging
+      };
+    }
+
+    // Case 2: Data is an Array of objects
+    if (Array.isArray(data)) {
+      const flatRows: any[] = [];
+      const childTables: Record<string, any[]> = {};
+
+      for (const item of data) {
+        const { flatRow, children } = this.flattenObject(item);
+        
+        if (parentKeyColumn && parentKeyValue) {
+          flatRow[parentKeyColumn] = parentKeyValue;
+        }
+
+        flatRows.push(flatRow);
+
+        const rowId = flatRow['guid'] || flatRow['id'] || this.generateGuid();
+        
+        for (const [childName, childArray] of Object.entries(children)) {
+            if(!childTables[childName]) childTables[childName] = [];
+            (childArray as any[]).forEach(c => {
+                 c[`${tableName}_guid`] = rowId; 
+            });
+            childTables[childName].push(...(childArray as any[]));
+        }
+      }
+
+      // 1. Insert Main Rows
+      if (flatRows.length > 0) {
+        await this.insertFromJson(tableName, flatRows);
+      }
+
+      // 2. Process Children
+      const childResults: ImportResult[] = [];
+      for (const [childTableName, childRows] of Object.entries(childTables)) {
+         const newTableName = `${tableName}_${childTableName}`;
+         // Recursive call
+         const childRes = await this.importComplexData(newTableName, childRows);
+         if (Array.isArray(childRes)) childResults.push(...childRes);
+         else childResults.push(childRes);
+      }
+
+      // Return the stats for this batch
+      return {
+        table: tableName,
+        inserted: flatRows.length,
+        children: childResults
+      };
+    }
+
+    return { table: tableName, inserted: 0 };
+  }
+  // --- Helpers for the Generic Importer ---
+
+  /**
+   * Helper: Flattens 1-to-1 objects and extracts 1-to-Many arrays
+   */
+  private flattenObject(obj: any, prefix = '') {
+    const flatRow: any = {};
+    const children: Record<string, any[]> = {};
+
+    for (const [key, value] of Object.entries(obj)) {
+      const newKey = prefix ? `${prefix}_${key}` : key;
+
+      if (Array.isArray(value)) {
+        // It's an array -> It becomes a child table
+        children[key] = value;
+      } else if (value && typeof value === 'object') {
+        // It's a nested object -> Flatten it (recursion)
+        const { flatRow: nestedRow, children: nestedChildren } = this.flattenObject(value, newKey);
+        Object.assign(flatRow, nestedRow);
+        Object.assign(children, nestedChildren);
+      } else {
+        // It's a primitive (string, number, boolean) -> It stays in the row
+        flatRow[newKey] = value;
+      }
+    }
+    return { flatRow, children };
+  }
+
+  /**
+   * Helper: Detects if an object is likely a Dictionary (Map) rather than a Data Row
+   * Heuristic: If values are Arrays, it's likely a grouping dictionary.
+   */
+  private isDictionary(obj: any): boolean {
+    const values = Object.values(obj);
+    if (values.length > 0 && Array.isArray(values[0])) return true;
+    return false;
+  }
+  // Complex Object End
 
 
   private messageReceived(message: MessageEvent) {

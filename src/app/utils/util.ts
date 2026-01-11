@@ -1,4 +1,5 @@
-export const mockData = [
+export const mockData = {
+    "c9110d3e-56e2-4115-b209-668582121599":  [
   {
     "guid": "a24a6ea4-ce75-4665-87cd-36e985007b56",
     "id": "prod_88349102",
@@ -76,3 +77,4 @@ export const mockData = [
     ]
   }
 ]
+}
