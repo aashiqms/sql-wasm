@@ -17,9 +17,9 @@ export class App {
     setTimeout(() => {
       this.webSqlite.init('test')
       this.batchSqlOperations()
-      this.executeQuery(`INSERT INTO your_table (a, b) VALUES (1, 'value 1')`)
+      // this.executeQuery(`INSERT INTO your_table (a, b) VALUES (1, 'value 1')`)
             this.executeQuery('SELECT * FROM your_table')
-            this.insertTenRecords()
+            // this.insertTenRecords()
 
     }, 600);
   }

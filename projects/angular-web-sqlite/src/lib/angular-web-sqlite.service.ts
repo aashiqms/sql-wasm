@@ -5,7 +5,7 @@ import '@angular/compiler';
 import { Injectable } from '@angular/core';
 
 export interface Message {
-  type: 'init' | 'executeSql' | 'batchSql' | 'batchReturnSql' | 'export' | 'exportDb';
+  type: 'init' | 'executeSql' | 'batchSql' | 'batchReturnSql' | 'export';
   id: string;
   flags?: string;
   filename?: string;
@@ -76,8 +76,6 @@ export class WebSqlite {
    * Function that downloads sqlite file
    */
   public async exportDb() {
-    debugger
-        console.log('hello export')
     await this.waitForInitialization();
     
     const exportMsg: Message = { 
@@ -90,8 +88,14 @@ export class WebSqlite {
 
     return new Promise<void>((resolve, reject) => {
       this.queuedPromises[exportMsg.id] = {
-        resolve: (buffer: ArrayBuffer) => {
-           this.downloadFile(buffer, this.filename.replace('/', ''));
+        // Change: The generic 'any' here receives the object returned by messageReceived
+        resolve: (response: any) => {
+           // FIX: Extract .rows (which contains the ArrayBuffer) from the response object
+           if (response && response.rows) {
+               this.downloadFile(response.rows, this.filename.replace('/', ''));
+           } else {
+               console.error('Export failed: No data received');
+           }
            resolve();
         },
         reject

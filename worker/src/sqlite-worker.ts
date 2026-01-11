@@ -45,10 +45,13 @@ self.onmessage = async (messageEvent: MessageEvent) => {
         printErr: error,
       }).then((sqlite3) => {
         try {
+          debugger
           dbs[sqliteMessage.filename] = new sqlite3.oo1.OpfsDb(sqliteMessage.filename, sqliteMessage.flags);
         } catch (err) {
+          debugger
           sqliteMessage.error = err;
         } finally {
+          debugger
           self.postMessage(sqliteMessage);
         }
       });
