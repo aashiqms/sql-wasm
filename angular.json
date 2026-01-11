@@ -23,6 +23,7 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+            "preserveSymlinks": true,
             "assets": [
               "src/assets",
               {
@@ -30,9 +31,24 @@
                 "input": "public"
               },
               {
+                "glob": "**/*.js",
+                "input": "node_modules/angular-web-sqlite/src/lib/assets",
+                "output": "sqlite-client"
+              },
+              {
                 "glob": "**/*",
                 "input": "node_modules/@sqlite.org/sqlite-wasm/sqlite-wasm/jswasm",
                 "output": "sqlite-client"
+              },
+              {
+                "glob": "**/*.js",
+                "input": "./node_modules/angular-web-sqlite/src/lib/assets",
+                "output": "./sqlite-client/"
+              },
+              {
+                "glob": "**/*",
+                "input": "./node_modules/@sqlite.org/sqlite-wasm/sqlite-wasm/jswasm/",
+                "output": "./sqlite-client/"
               }
             ],
             "styles": [

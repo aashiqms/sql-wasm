@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { WebSqlite } from './services/database.service';
+import { WebSqlite } from 'angular-web-sqlite';
 
 @Component({
   selector: 'app-root',

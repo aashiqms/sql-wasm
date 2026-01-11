@@ -8,6 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "build:lib": "npx ng-packagr -p projects/angular-web-sqlite/ng-package.json",
+    "build-pack": "npx ng-packagr -p projects/angular-web-sqlite/ng-package.json && npm pack ./dist/angular-web-sqlite",
     "worker-pack": "cd worker && npm i --force && npm run build && npm run bundle && cd src && node moveFolder.js && cd .. && cd .."
   },
   "prettier": {

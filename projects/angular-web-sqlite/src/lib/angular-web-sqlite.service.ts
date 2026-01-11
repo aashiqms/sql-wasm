@@ -76,6 +76,8 @@ export class WebSqlite {
    * Function that downloads sqlite file
    */
   public async exportDb() {
+    debugger
+        console.log('hello export')
     await this.waitForInitialization();
     
     const exportMsg: Message = { 
@@ -99,6 +101,7 @@ export class WebSqlite {
 
   // Helper to trigger the download in the browser
   private downloadFile(buffer: ArrayBuffer, fileName: string) {
+    debugger
     const blob = new Blob([buffer], { type: 'application/x-sqlite3' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -150,7 +153,8 @@ export class WebSqlite {
             return promise.reject(sqliteMessage.error);
           }
           return promise.resolve({ rows: sqliteMessage.rows });
-        case 'exportDb':
+        case 'export':
+          debugger
           if (sqliteMessage.error) {
             return promise.reject(sqliteMessage.error);
           }
